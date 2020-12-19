@@ -43,8 +43,10 @@ class Pomodoro:
         for y, row in enumerate(Pomodoro.CLOCK):
             for x, char in enumerate(row):
                 # compute the distance and angle (of this character) to the 
-                # centre of the circle (13.5, 7).
-                theta = math.atan2(x - 13.5, y - 7)
+                # centre of the circle O(13.5, 7). angle is normalized to the
+                # range [0, tau), where 0 is the vertical and increases in a
+                # clockwise direction.
+                theta = -math.atan2(x - 13.5, y - 7) + math.pi
                 d = math.sqrt((x - 13.5)**2 + (y - 7)**2)
 
                 if d <= 3.5:
@@ -53,7 +55,7 @@ class Pomodoro:
                 elif d <= 5:
                     # ...then this is the activity indicator
                     print("\u001b[38;5;221m" + char + "\u001b[0m", end="")
-                elif (theta + math.pi) <= (math.tau * percentage):
+                elif theta <= (2 * math.pi * percentage):
                     # ...then this is part of the completed portion of the 
                     # circle
                     print("\u001b[38;5;198m" + char + "\u001b[0m", end="")
