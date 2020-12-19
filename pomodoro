@@ -13,17 +13,65 @@ import math
 import time
 
 class Pomodoro:
-    """ A generic Pomodoro timer. """
+    """ class Pomodoro
+    
+    A Pomodoro timer, a time management tool that breaks long periods of
+    time into "working" and "resting" blocks. """
+
+    CLOCK = [list(l) for l in """
+            ....
+        _d^^^^^^^^b_
+     .d''          ``b.
+   .p'                `q.
+  .d'                  `b.
+ .d'                    `b.
+ ::                      ::
+ ::       00:13:37       ::
+ ::                      ::
+ `p.                    .q'
+  `p.                  .q'
+   `b.      WORK      .d'
+     `q..          ..p'
+        ^q........p^
+            ''''
+""".split("\n") if l.strip()]
+
+    def render(self, percentage=0.5):
+        # move cursor to 0, 0 
+        print("\u001b[0;0H", end="")
+
+        for y, row in enumerate(Pomodoro.CLOCK):
+            for x, char in enumerate(row):
+                # compute the distance and angle (of this character) to the 
+                # centre of the circle (13.5, 7).
+                theta = math.atan2(x - 13.5, y - 7)
+                d = math.sqrt((x - 13.5)**2 + (y - 7)**2)
+
+                if d <= 3.5:
+                    # ..then this is the timer
+                    print("\u001b[38;5;8m" + char + "\u001b[0m", end="")
+                elif d <= 5:
+                    # ...then this is the activity indicator
+                    print("\u001b[38;5;221m" + char + "\u001b[0m", end="")
+                elif (theta + math.pi) <= (math.tau * percentage):
+                    # ...then this is part of the completed portion of the 
+                    # circle
+                    print("\u001b[38;5;198m" + char + "\u001b[0m", end="")
+                else:
+                    # ...then this is part of the incomplete portion of the
+                    # circle
+                    print("\u001b[38;5;242m" + char + "\u001b[0m", end="")
+            
+            print("")
+
+        # force stdout flush
+        sys.stdout.flush()
+
     def tick(self):
-        self.timer = 0
+        pass
 
     def __init__(self, args):
-        self.phases = {
-            "work": args.work,
-            "rest": args.rest
-        }
-
-        self.timer = 0
+        pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -37,23 +85,27 @@ if __name__ == "__main__":
 
     # create Pomodoro timer instance
     timer = Pomodoro(args)
+   
+    # clear terminal and reset cursor
+    print("\u001b[2J\u001b[0;0H")
 
+    percentage = 0.0
     while True:
         try:
-            timer.tick()
+            timer.render(percentage=percentage)
+            if percentage >= 1:
+                break
+            
+            percentage = percentage + 0.05
             time.sleep(1)
         except KeyboardInterrupt:
             # if there's a KeyboardInterrupt, pause the Pomodoro timer. allow
             # the user to resume, or quit.
-
-            action = input("Paused the timer. (r)esume/(q)uit? ").lower()
-            while action not in ["r", "resume", "q", "quit"]:
-                action = input("Unknown command. (r)esume/(q)uit? ")
+            action = input("\u001b[1000DPaused. (r)esume/(q)uit? ").lower()
 
             if (action in ["r", "resume"]):
                 pass
             elif (action in ["q", "quit"]):
                 sys.exit(0)
             else:
-                raise RuntimeError("unreachable state")
-
+                raise RuntimeError("illegal selection")
