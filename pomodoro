@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# pomodoro
+# Copyright (c) 2020 Hugh Coleman
+#
+# This file is part of hughcoleman/pomodoro, a Pomodoro timer for the command
+# line. It is released under the MIT License (see LICENSE.)
+
+import sys
+import argparse
+import math
+import time
+
+class Pomodoro:
+    """ A generic Pomodoro timer. """
+    def tick(self):
+        self.timer = 0
+
+    def __init__(self, args):
+        self.phases = {
+            "work": args.work,
+            "rest": args.rest
+        }
+
+        self.timer = 0
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-w", "--work", default=25, type=int,
+            help="number of minutes of work")
+    parser.add_argument("-r", "--rest", default=5, type=int,
+            help="number of minutes of rest")
+
+    args = parser.parse_args()
+
+    # create Pomodoro timer instance
+    timer = Pomodoro(args)
+
+    while True:
+        try:
+            timer.tick()
+            time.sleep(1)
+        except KeyboardInterrupt:
+            # if there's a KeyboardInterrupt, pause the Pomodoro timer. allow
+            # the user to resume, or quit.
+
+            action = input("Paused the timer. (r)esume/(q)uit? ").lower()
+            while action not in ["r", "resume", "q", "quit"]:
+                action = input("Unknown command. (r)esume/(q)uit? ")
+
+            if (action in ["r", "resume"]):
+                pass
+            elif (action in ["q", "quit"]):
+                sys.exit(0)
+            else:
+                raise RuntimeError("unreachable state")
+
