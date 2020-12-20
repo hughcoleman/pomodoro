@@ -26,22 +26,38 @@ class Pomodoro:
   .d'                  `b.
  .d'                    `b.
  ::                      ::
- ::       00:13:37       ::
+ ::       %H:%M:%S       ::
  ::                      ::
  `p.                    .q'
   `p.                  .q'
-   `b.      WORK      .d'
+   `b.%A.d'
      `q..          ..p'
         ^q........p^
             ''''
 """.split("\n") if l.strip()]
 
-    def render(self, percentage=0.5):
+    def render(self):
         # move cursor to 0, 0 
         print("\u001b[0;0H", end="")
 
+        # compute h, m, s remaining
+        m, s = divmod(self.durations[self.activity] - self.clock, 60)
+        h, m = divmod(m, 60)
+
+        # calculate percentage of completion
+        percentage = self.clock / self.durations[self.activity]
+
+        # the following variables are used, to allow the use of format
+        # placeholders in the template.
+        #  - y represents the current row being parsed.
+        #  - x represents the x-position of the current character.
+        #  - column represents an index into Pomodoro.CLOCK[y]
         for y, row in enumerate(Pomodoro.CLOCK):
-            for x, char in enumerate(row):
+            x = 0
+            column = 0
+            while column < len(row):
+                character = row[column]
+
                 # compute the distance and angle (of this character) to the 
                 # centre of the circle O(13.5, 7). angle is normalized to the
                 # range [0, tau), where 0 is the vertical and increases in a
@@ -49,31 +65,69 @@ class Pomodoro:
                 theta = -math.atan2(x - 13.5, y - 7) + math.pi
                 d = math.sqrt((x - 13.5)**2 + (y - 7)**2)
 
-                if d <= 3.5:
+                # handle formats
+                if character in ["%", "$"]:
+                    # bit hacky, just overwrite the character variable with new
+                    # value
+                    character = {
+                        "H": str(h).zfill(2),
+                        "M": str(m).zfill(2),
+                        "S": str(s).zfill(2),
+                        "A": str(self.activity.upper()).center(16),
+                    }[row[column + 1]]
+                    
+                    column = column + 1
+                    x = x + len(character)
+
+                if d <= 4.5:
                     # ..then this is the timer
-                    print("\u001b[38;5;8m" + char + "\u001b[0m", end="")
-                elif d <= 5:
+                    print("\u001b[38;5;8m" + character + "\u001b[0m", end="")
+                elif (column == 7) and (y == 11):
                     # ...then this is the activity indicator
-                    print("\u001b[38;5;221m" + char + "\u001b[0m", end="")
+                    print("\u001b[38;5;221m" + character + "\u001b[0m", end="")
                 elif theta <= (2 * math.pi * percentage):
                     # ...then this is part of the completed portion of the 
                     # circle
-                    print("\u001b[38;5;198m" + char + "\u001b[0m", end="")
+                    print("\u001b[38;5;198m" + character + "\u001b[0m", end="")
                 else:
                     # ...then this is part of the incomplete portion of the
                     # circle
-                    print("\u001b[38;5;242m" + char + "\u001b[0m", end="")
-            
-            print("")
+                    print("\u001b[38;5;242m" + character + "\u001b[0m", end="")
+
+                column = column + 1
+                x = x + 1
+
+            print("", end="\n")
 
         # force stdout flush
         sys.stdout.flush()
 
     def tick(self):
-        pass
+        # render the timer
+        self.render()
+        self.clock = self.clock + 1
+        
+        # handle activity switches
+        if self.clock >= self.durations[self.activity]:
+            # flip current activity
+            self.activity = {
+                "work": "rest",
+                "rest": "work"
+            }[self.activity]
 
+            # reset internal clock
+            self.clock = 0
+        
     def __init__(self, args):
-        pass
+        self.clock = 0
+
+        self.durations = {
+            "work": args.work * 60,
+            "rest": args.rest * 60
+        }
+
+        self.activity = "work"
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -91,14 +145,9 @@ if __name__ == "__main__":
     # clear terminal and reset cursor
     print("\u001b[2J\u001b[0;0H")
 
-    percentage = 0.0
     while True:
         try:
-            timer.render(percentage=percentage)
-            if percentage >= 1:
-                break
-            
-            percentage = percentage + 0.05
+            timer.tick()
             time.sleep(1)
         except KeyboardInterrupt:
             # if there's a KeyboardInterrupt, pause the Pomodoro timer. allow
