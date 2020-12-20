@@ -19,21 +19,21 @@ class Pomodoro:
     time into "working" and "resting" blocks. """
 
     CLOCK = [list(l) for l in """
-            ....
-        _d^^^^^^^^b_
-     .d''          ``b.
-   .p'                `q.
-  .d'                  `b.
+            ....           
+        _d^^^^^^^^b_       
+     .d''          ``b.    
+   .p'                `q.  
+  .d'                  `b. 
  .d'                    `b.
  ::                      ::
  ::       %H:%M:%S       ::
  ::                      ::
  `p.                    .q'
-  `p.                  .q'
-   `b.%A.d'
-     `q..          ..p'
-        ^q........p^
-            ''''
+  `p.                  .q' 
+   `b.%A.d'  
+     `q..          ..p'    
+        ^q........p^       
+            ''''           
 """.split("\n") if l.strip()]
 
     def render(self):
@@ -75,7 +75,7 @@ class Pomodoro:
                         "S": str(s).zfill(2),
                         "A": str(self.activity.upper()).center(16),
                     }[row[column + 1]]
-                    
+
                     column = column + 1
                     x = x + len(character)
 
