@@ -12,6 +12,8 @@ import argparse
 import math
 import time
 
+import curses
+
 class Pomodoro:
     """ class Pomodoro
     
@@ -36,10 +38,7 @@ class Pomodoro:
             ''''           
 """.split("\n") if l.strip()]
 
-    def render(self):
-        # move cursor to 0, 0 
-        print("\u001b[0;0H", end="")
-
+    def render(self, screen):
         # compute h, m, s remaining
         m, s = divmod(self.durations[self.activity] - self.clock, 60)
         h, m = divmod(m, 60)
@@ -49,12 +48,12 @@ class Pomodoro:
 
         # the following variables are used, to allow the use of format
         # placeholders in the template.
-        #  - y represents the current row being parsed.
-        #  - x represents the x-position of the current character.
-        #  - column represents an index into Pomodoro.CLOCK[y]
+        #  - y represents the current row being parsed
+        #  - x represents the x-position of the current character
+        #  - column represents the index into the row
         for y, row in enumerate(Pomodoro.CLOCK):
-            x = 0
             column = 0
+            x = 0
             while column < len(row):
                 character = row[column]
 
@@ -65,46 +64,47 @@ class Pomodoro:
                 theta = -math.atan2(x - 13.5, y - 7) + math.pi
                 d = math.sqrt((x - 13.5)**2 + (y - 7)**2)
 
-                # handle formats
-                if character in ["%", "$"]:
-                    # bit hacky, just overwrite the character variable with new
-                    # value
+                # apply the templates - this is a really bad way to do this;
+                # but it's "good enough" for this use-case.
+                if (character == "%"):
+                    specifier = row[column + 1]
+
                     character = {
-                        "H": str(h).zfill(2),
+                        "H": str(h).zfill(2), 
                         "M": str(m).zfill(2),
-                        "S": str(s).zfill(2),
-                        "A": str(self.activity.upper()).center(16),
-                    }[row[column + 1]]
+                        "S": str(s).zfill(2), 
+                        "A": self.activity.upper().center(16)
+                    }[specifier]
 
-                    column = column + 1
-                    x = x + len(character)
+                    # skip the specifier
+                    column = column + 1 
 
-                if d <= 4.5:
+                color = curses.color_pair(0) # 242
+                if d <= 3.5:
                     # ..then this is the timer
-                    print("\u001b[38;5;8m" + character + "\u001b[0m", end="")
-                elif (column == 7) and (y == 11):
+                    color = curses.color_pair(4) # 8
+                elif (x == 6) and (y == 11):
                     # ...then this is the activity indicator
-                    print("\u001b[38;5;221m" + character + "\u001b[0m", end="")
+                    color = curses.color_pair(7) # 221
                 elif theta <= (2 * math.pi * percentage):
                     # ...then this is part of the completed portion of the 
                     # circle
-                    print("\u001b[38;5;198m" + character + "\u001b[0m", end="")
-                else:
-                    # ...then this is part of the incomplete portion of the
-                    # circle
-                    print("\u001b[38;5;242m" + character + "\u001b[0m", end="")
+                    color = curses.color_pair(6) # 198
 
+                screen.addstr(y, x, character, color)
                 column = column + 1
-                x = x + 1
+                x = x + len(character)
 
-            print("", end="\n")
+        # "hide" cursor
+        y, x = screen.getmaxyx()
+        screen.addstr(y - 2, x - 2, " ")
 
         # force stdout flush
-        sys.stdout.flush()
+        screen.refresh()
 
     def tick(self):
         # render the timer
-        self.render()
+        # self.render()
         self.clock = self.clock + 1
         
         # handle activity switches
@@ -125,11 +125,9 @@ class Pomodoro:
             "work": args.work * 60,
             "rest": args.rest * 60
         }
-
         self.activity = "work"
         
-
-if __name__ == "__main__":
+def main(screen):
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-w", "--work", default=25, type=int,
@@ -141,22 +139,36 @@ if __name__ == "__main__":
 
     # create Pomodoro timer instance
     timer = Pomodoro(args)
-   
-    # clear terminal and reset cursor
-    print("\u001b[2J\u001b[0;0H")
 
+    # setup curses/terminal colours options
+    curses.start_color()
+    curses.use_default_colors()
+    for i in range(curses.COLORS):
+        curses.init_color(i, 1000, 0, 0)
+        curses.init_pair(i + 1, i, 0)
+
+    # it's probably not a good idea to rely on curses' getch() timeout as a
+    # timer, but it's good enough
+    screen.timeout(1000)
     while True:
-        try:
-            timer.tick()
-            time.sleep(1)
-        except KeyboardInterrupt:
-            # if there's a KeyboardInterrupt, pause the Pomodoro timer. allow
-            # the user to resume, or quit.
-            action = input("\u001b[1000DPaused. (r)esume/(q)uit? ").lower()
+        timer.render(screen)
+        timer.tick()
 
-            if (action in ["r", "resume"]):
-                pass
-            elif (action in ["q", "quit"]):
-                sys.exit(0)
-            else:
-                raise RuntimeError("illegal selection")
+        # q to quit
+        key = screen.getch()
+        if key == ord("q"):
+            return
+        elif key == ord("p"):
+            screen.addstr(16, 0, "Timer paused. Press p again to resume. ")
+
+            while True:
+                key = screen.getch()
+                if key == ord("p"):
+                    break
+
+            screen.clear()
+        
+    return
+
+if __name__ == "__main__":
+    curses.wrapper(main)
