@@ -28,11 +28,11 @@ class Pomodoro:
   .d'                  `b. 
  .d'                    `b.
  ::                      ::
- ::       Hh:Mm:Ss       ::
+ ::       %H:%M:%S       ::
  ::                      ::
  `p.                    .q'
   `p.                  .q' 
-   `b.      ABCD      .d'  
+   `b.%A.d'  
      `q..          ..p'    
         ^q........p^       
             ''''           
@@ -48,10 +48,15 @@ class Pomodoro:
 
         # the following variables are used, to allow the use of format
         # placeholders in the template.
-        #  - y represents the current row being parsed.
-        #  - x represents the x-position of the current character.
+        #  - y represents the current row being parsed
+        #  - x represents the x-position of the current character
+        #  - column represents the index into the row
         for y, row in enumerate(Pomodoro.CLOCK):
-            for x, character in enumerate(row):
+            column = 0
+            x = 0
+            while column < len(row):
+                character = row[column]
+
                 # compute the distance and angle (of this character) to the 
                 # centre of the circle O(13.5, 7). angle is normalized to the
                 # range [0, tau), where 0 is the vertical and increases in a
@@ -59,25 +64,26 @@ class Pomodoro:
                 theta = -math.atan2(x - 13.5, y - 7) + math.pi
                 d = math.sqrt((x - 13.5)**2 + (y - 7)**2)
 
-                # apply the templates - this is a really bad way to do this; it
-                # doesn't account for variable-length activity status strings,
+                # apply the templates - this is a really bad way to do this;
                 # but it's "good enough" for this use-case.
-                if character in "HhMmSsABCD":
-                    activity = self.activity.upper()
+                if (character == "%"):
+                    specifier = row[column + 1]
 
                     character = {
-                        "H": str(h // 10), "h": str(h % 10),
-                        "M": str(m // 10), "m": str(m % 10),
-                        "S": str(s // 10), "s": str(s % 10),
-                        "A": activity[0],  "B": activity[1],
-                        "C": activity[2],  "D": activity[3]
-                    }[character]
+                        "H": str(h).zfill(2), 
+                        "M": str(m).zfill(2),
+                        "S": str(s).zfill(2), 
+                        "A": self.activity.upper().center(16)
+                    }[specifier]
+
+                    # skip the specifier
+                    column = column + 1 
 
                 color = curses.color_pair(0) # 242
                 if d <= 3.5:
                     # ..then this is the timer
                     color = curses.color_pair(4) # 8
-                elif d <= 5:
+                elif (x == 6) and (y == 11):
                     # ...then this is the activity indicator
                     color = curses.color_pair(7) # 221
                 elif theta <= (2 * math.pi * percentage):
@@ -85,7 +91,9 @@ class Pomodoro:
                     # circle
                     color = curses.color_pair(6) # 198
 
-                screen.addch(y, x, character, color)
+                screen.addstr(y, x, character, color)
+                column = column + 1
+                x = x + len(character)
 
         # force stdout flush
         screen.refresh()
