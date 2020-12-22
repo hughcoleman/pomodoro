@@ -28,11 +28,11 @@ class Pomodoro:
   .d'                  `b. 
  .d'                    `b.
  ::                      ::
- ::       HH:MM:SS       ::
+ ::       Hh:Mm:Ss       ::
  ::                      ::
  `p.                    .q'
   `p.                  .q' 
-   `b.      WORK      .d'  
+   `b.      ABCD      .d'  
      `q..          ..p'    
         ^q........p^       
             ''''           
@@ -58,6 +58,20 @@ class Pomodoro:
                 # clockwise direction.
                 theta = -math.atan2(x - 13.5, y - 7) + math.pi
                 d = math.sqrt((x - 13.5)**2 + (y - 7)**2)
+
+                # apply the templates - this is a really bad way to do this; it
+                # doesn't account for variable-length activity status strings,
+                # but it's "good enough" for this use-case.
+                if character in "HhMmSsABCD":
+                    activity = self.activity.upper()
+
+                    character = {
+                        "H": str(h // 10), "h": str(h % 10),
+                        "M": str(m // 10), "m": str(m % 10),
+                        "S": str(s // 10), "s": str(s % 10),
+                        "A": activity[0],  "B": activity[1],
+                        "C": activity[2],  "D": activity[3]
+                    }[character]
 
                 color = curses.color_pair(0) # 242
                 if d <= 3.5:
@@ -111,21 +125,24 @@ def main(screen):
 
     args = parser.parse_args()
 
-    # setup curses/screen options
+    # create Pomodoro timer instance
+    timer = Pomodoro(args)
+
+    # setup curses/terminal colours options
     curses.start_color()
     curses.use_default_colors()
-    screen.timeout(1000)
-
     for i in range(curses.COLORS):
         curses.init_color(i, 1000, 0, 0)
         curses.init_pair(i + 1, i, 0)
 
-    # create Pomodoro timer instance
-    timer = Pomodoro(args)
+    # it's probably not a good idea to rely on curses' getch() timeout as a
+    # timer, but it's good enough
+    screen.timeout(1000)
     while True:
         timer.render(screen)
         timer.tick()
 
+        # q to quit
         if screen.getch() == ord("q"):
             return
         
