@@ -158,17 +158,17 @@ def main(screen):
         timer.render(screen)
         timer.tick()
 
-        # q to quit
-        key = screen.getch()
-        if key == ord("q"):
-            return
-        elif key == ord("p"):
-            screen.addstr(16, 0, "Timer paused. Press p again to resume. ")
+        # detect "esc" or "alt" keys
+        if screen.getch() == 27:
+            screen.addstr(16, 0, 
+                    "Timer paused. Press `p` to resume, or `q` to quit. ")
 
             while True:
                 key = screen.getch()
                 if key == ord("p"):
                     break
+                elif key == ord("q"):
+                    return
 
             screen.clear()
         
