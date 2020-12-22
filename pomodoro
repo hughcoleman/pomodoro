@@ -95,6 +95,10 @@ class Pomodoro:
                 column = column + 1
                 x = x + len(character)
 
+        # "hide" cursor
+        y, x = screen.getmaxyx()
+        screen.addstr(y - 2, x - 2, " ")
+
         # force stdout flush
         screen.refresh()
 
@@ -151,8 +155,18 @@ def main(screen):
         timer.tick()
 
         # q to quit
-        if screen.getch() == ord("q"):
+        key = screen.getch()
+        if key == ord("q"):
             return
+        elif key == ord("p"):
+            screen.addstr(16, 0, "Timer paused. Press p again to resume. ")
+
+            while True:
+                key = screen.getch()
+                if key == ord("p"):
+                    break
+
+            screen.clear()
         
     return
 
