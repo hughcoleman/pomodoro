@@ -79,17 +79,19 @@ class Pomodoro:
                     # skip the specifier
                     column = column + 1 
 
-                color = curses.color_pair(0) # 242
+                _256color = curses.COLORS >= 256
+
+                color = curses.color_pair(242 if _256color else 0)
                 if d <= 3.5:
                     # ..then this is the timer
-                    color = curses.color_pair(4) # 8
+                    color = curses.color_pair(8 if _256color else 4)
                 elif (x == 6) and (y == 11):
                     # ...then this is the activity indicator
-                    color = curses.color_pair(7) # 221
+                    color = curses.color_pair(221 if _256color else 7)
                 elif theta <= (2 * math.pi * percentage):
                     # ...then this is part of the completed portion of the 
                     # circle
-                    color = curses.color_pair(6) # 198
+                    color = curses.color_pair(198 if _256color else 6)
 
                 screen.addstr(y, x, character, color)
                 column = column + 1
@@ -144,8 +146,10 @@ def main(screen):
     curses.start_color()
     curses.use_default_colors()
     for i in range(curses.COLORS):
-        curses.init_color(i, 1000, 0, 0)
-        curses.init_pair(i + 1, i, 0)
+        if curses.COLORS < 256:
+            # Windows?
+            curses.init_color(i, 1000, 0, 0)
+        curses.init_pair(i + 1, i, -1)
 
     # it's probably not a good idea to rely on curses' getch() timeout as a
     # timer, but it's good enough
