@@ -32,7 +32,7 @@ The Pomodoro timer will be rendered in your terminal. As time passes, the circle
             ''''
 ```
 
-To pause/restart the timer, press `p`. To quit the timer, press `q`.
+To pause/quit the timer, press `Esc` followed by `p` or `q`, respectively.
 
 ###### License
 
