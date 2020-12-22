@@ -81,17 +81,17 @@ class Pomodoro:
 
                 _256color = curses.COLORS >= 256
 
-                color = curses.color_pair(242 if _256color else 0)
+                color = curses.color_pair(242 if _256color else 4)
                 if d <= 3.5:
                     # ..then this is the timer
-                    color = curses.color_pair(8 if _256color else 4)
+                    color = curses.color_pair(8 if _256color else 0)
                 elif (x == 6) and (y == 11):
                     # ...then this is the activity indicator
                     color = curses.color_pair(221 if _256color else 7)
                 elif theta <= (2 * math.pi * percentage):
                     # ...then this is part of the completed portion of the 
                     # circle
-                    color = curses.color_pair(198 if _256color else 6)
+                    color = curses.color_pair(198 if _256color else 5)
 
                 screen.addstr(y, x, character, color)
                 column = column + 1
