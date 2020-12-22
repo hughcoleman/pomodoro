@@ -32,7 +32,7 @@ The Pomodoro timer will be rendered in your terminal. As time passes, the circle
             ''''
 ```
 
-To pause or quit the timer, hit `Ctrl-C`.
+To quit the timer, hit `q`.
 
 ###### License
 
